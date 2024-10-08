@@ -2,6 +2,8 @@ const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const { unlinkSync } = require('fs');
 const qrcode = require('qrcode-terminal'); 
+const { MessageMedia } = require('whatsapp-web.js');
+const axios = require('axios'); // Importa la libreria axios
 
 const app = express();
 const PORT = 3000;
@@ -61,6 +63,30 @@ app.post('/send-message', async (req, res) => {
   } catch (error) {
     console.error('Error enviando el mensaje:', error);
     res.status(500).json({ error: 'Error enviando el mensaje' });
+  }
+});
+
+app.post('/send-image-message', async (req, res) => {
+  const { number, message, imageUrl } = req.body;
+
+  if (!number || !message || !imageUrl) {
+    return res.status(400).json({ error: 'Faltan parámetros. Se requiere número, mensaje y URL de imagen.' });
+  }
+
+  try {
+    const jid = `${number}@c.us`;
+    console.log("JID:", jid);
+
+    // Descarga la imagen de la URL
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' }); 
+    const imageData = Buffer.from(response.data);
+    const media = new MessageMedia(response.headers['content-type'], imageData, 'imagen.jpg'); // Usa el content-type de la respuesta 
+
+    await client.sendMessage(jid, message, { media });
+    res.status(200).json({ status: 'Mensaje con imagen enviado correctamente' });
+  } catch (error) {
+    console.error('Error enviando el mensaje con imagen:', error);
+    res.status(500).json({ error: 'Error enviando el mensaje con imagen' });
   }
 });
 
