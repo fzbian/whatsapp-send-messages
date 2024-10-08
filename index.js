@@ -1,9 +1,9 @@
 const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const { unlinkSync } = require('fs');
+const { unlinkSync, readFileSync } = require('fs'); // Importar readFileSync
 const qrcode = require('qrcode-terminal'); 
 const { MessageMedia } = require('whatsapp-web.js');
-const axios = require('axios'); // Importa la libreria axios
+const path = require('path'); // Importar path para manejar rutas de archivos
 
 const app = express();
 const PORT = 3000;
@@ -12,8 +12,8 @@ app.use(express.json());
 
 const client = new Client({
   puppeteer: {
-    headless: true, // Ejecutar en modo headless
-    executablePath: '/usr/bin/chromium-browser', // Ruta de Chromium en Ubuntu
+    headless: true, 
+    executablePath: '/usr/bin/chromium-browser', 
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -21,7 +21,7 @@ const client = new Client({
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process', // Esto evitará que se creen múltiples procesos
+      '--single-process', 
       '--disable-gpu',
     ],
   },
@@ -67,20 +67,24 @@ app.post('/send-message', async (req, res) => {
 });
 
 app.post('/send-image-message', async (req, res) => {
-  const { number, message, imageUrl } = req.body;
+  const { number, message, imageName } = req.body; // Recibe el nombre de la imagen
 
-  if (!number || !message || !imageUrl) {
-    return res.status(400).json({ error: 'Faltan parámetros. Se requiere número, mensaje y URL de imagen.' });
+  if (!number || !message || !imageName) {
+    return res.status(400).json({ error: 'Faltan parámetros. Se requiere número, mensaje y nombre de imagen.' });
   }
 
   try {
     const jid = `${number}@c.us`;
     console.log("JID:", jid);
 
-    // Descarga la imagen de la URL
-    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' }); 
-    const imageData = Buffer.from(response.data);
-    const media = new MessageMedia(response.headers['content-type'], imageData, 'imagen.jpg'); // Usa el content-type de la respuesta 
+    // Lee la imagen del archivo
+    const imagePath = path.join(__dirname, 'images', imageName); // Ruta relativa al archivo
+    const imageData = readFileSync(imagePath); // Lee el contenido del archivo
+
+    // Obtiene el tipo MIME de la imagen (asumiendo JPEG por defecto)
+    const mimeType = imageName.endsWith('.jpg') || imageName.endsWith('.jpeg') ? 'image/jpeg' : 'image/png'; 
+
+    const media = new MessageMedia(mimeType, imageData, imageName); 
 
     await client.sendMessage(jid, message, { media });
     res.status(200).json({ status: 'Mensaje con imagen enviado correctamente' });
