@@ -9,12 +9,25 @@ const PORT = 3000;
 app.use(express.json());
 
 const client = new Client({
+  puppeteer: {
+    headless: true, // Ejecutar en modo headless
+    executablePath: '/usr/bin/chromium-browser', // Ruta de Chromium en Ubuntu
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process', // Esto evitará que se creen múltiples procesos
+      '--disable-gpu',
+    ],
+  },
   authStrategy: new LocalAuth({
-    session: session,
     dataPath: './auth_info',
-    puppeteer: {headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']}
   }),
 });
+
 
 client.on('qr', (qr) => {
   console.log('Escanea el código QR:');
