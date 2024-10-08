@@ -1,6 +1,6 @@
 const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const { unlinkSync, readFileSync } = require('fs'); // Importar readFileSync
+const { unlinkSync } = require('fs'); // Importar readFileSync
 const qrcode = require('qrcode-terminal'); 
 const { MessageMedia } = require('whatsapp-web.js');
 const path = require('path'); // Importar path para manejar rutas de archivos
@@ -77,14 +77,9 @@ app.post('/send-image-message', async (req, res) => {
     const jid = `${number}@c.us`;
     console.log("JID:", jid);
 
-    // Lee la imagen del archivo
-    const imagePath = path.join(__dirname, 'images', imageName); // Ruta relativa al archivo
-    const imageData = readFileSync(imagePath); // Lee el contenido del archivo
-
-    // Obtiene el tipo MIME de la imagen (asumiendo JPEG por defecto)
-    const mimeType = imageName.endsWith('.jpg') || imageName.endsWith('.jpeg') ? 'image/jpeg' : 'image/png'; 
-
-    const media = new MessageMedia(mimeType, imageData, imageName); 
+    // Crea la instancia de MessageMedia desde el archivo
+    const imagePath = path.join(__dirname, 'images', imageName); 
+    const media = MessageMedia.fromFilePath(imagePath);
 
     await client.sendMessage(jid, message, { media });
     res.status(200).json({ status: 'Mensaje con imagen enviado correctamente' });
